@@ -112,6 +112,15 @@ public abstract class AbstractModelParser {
         // Fields have 3 KEY features: FOM name (attribute/parameter), and a Coder.
         // Access level can vary because objects have them at the attribute level, whereas interactions have them at
         // the class level. This functionality is implemented by the subclasses respectively.
+        Field previousField = fomElementNameToField.get(fomName);
+        if (previousField != null) {
+            fields.remove(previousField);
+            fieldToFomElementName.remove(previousField);
+            fieldToCoder.remove(previousField);
+            fieldToGetter.remove(previousField);
+            fieldToSetter.remove(previousField);
+        }
+
         this.fields.add(field);
         this.fomElementNameToField.put(fomName, field);
         this.fieldToFomElementName.put(field, fomName);
