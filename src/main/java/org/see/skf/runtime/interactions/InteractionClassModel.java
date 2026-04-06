@@ -144,7 +144,7 @@ public final class InteractionClassModel extends AbstractClassModel {
     }
 
     public Class<?> getInteractionClass() {
-        return parser.getFomClass();
+        return parser.getNativeRepresentation();
     }
 
     @Override

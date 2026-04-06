@@ -153,7 +153,7 @@ public abstract class SKBaseFederate implements SKFederateInterface {
         String errorMessage = "Failed to parse the class <" + targetClass.getName() + "> because it has no object class annotation.";
         ObjectClass annotation = targetClass.getAnnotation(ObjectClass.class);
         if (annotation == null) {
-            annotation = findKnownObjectClassAncestor(targetClass);
+            annotation = locateObjectClassAncestor(targetClass);
 
             if (annotation == null) {
                 throw new IllegalStateException(errorMessage);
@@ -167,7 +167,7 @@ public abstract class SKBaseFederate implements SKFederateInterface {
         String errorMessage = "Failed to parse the class" + targetClass.getName() + "because it has no interaction class annotation.";
         InteractionClass annotation = targetClass.getAnnotation(InteractionClass.class);
         if (annotation == null) {
-            annotation = findInteractionClassAncestor(targetClass);
+            annotation = locateInteractionClassAncestor(targetClass);
 
             if (annotation == null) {
                 throw new IllegalStateException(errorMessage);
@@ -177,7 +177,7 @@ public abstract class SKBaseFederate implements SKFederateInterface {
         return annotation.name();
     }
 
-    private ObjectClass findKnownObjectClassAncestor(Class<?> clazz) {
+    private ObjectClass locateObjectClassAncestor(Class<?> clazz) {
         ObjectClass annotation = null;
 
         while (clazz != null && clazz != Object.class) {
@@ -192,7 +192,7 @@ public abstract class SKBaseFederate implements SKFederateInterface {
         return annotation;
     }
 
-    private InteractionClass findInteractionClassAncestor(Class<?> clazz) {
+    private InteractionClass locateInteractionClassAncestor(Class<?> clazz) {
         InteractionClass annotation = null;
 
         while (clazz != null && clazz != Object.class) {

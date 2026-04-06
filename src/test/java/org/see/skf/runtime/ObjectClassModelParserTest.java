@@ -3,6 +3,7 @@ package org.see.skf.runtime;
 import org.junit.jupiter.api.Test;
 import org.see.skf.annotations.Attribute;
 import org.see.skf.annotations.ObjectClass;
+import org.see.skf.util.encoding.HLAinteger16BECoder;
 import org.see.skf.util.models.ExecutionConfiguration;
 import org.see.skf.util.encoding.HLAfloat64LECoder;
 import org.see.skf.util.encoding.HLAunicodeStringCoder;
@@ -21,6 +22,7 @@ class ObjectClassModelParserTest {
     final ObjectClassModelParser physicalEntityParser = new ObjectClassModelParser(PhysicalEntity.class);
     final ObjectClassModelParser dynamicalEntityParser = new ObjectClassModelParser(DynamicalEntity.class);
     final ObjectClassModelParser roverParser = new ObjectClassModelParser(Rover.class);
+    final ObjectClassModelParser transportRoverParser = new ObjectClassModelParser(TransportRover.class);
 
     @Test
     void testBasicMetadata() {
@@ -114,7 +116,77 @@ class ObjectClassModelParserTest {
         assertEquals(ScopeLevel.SUBSCRIBE, dynamicalEntityParser.getAttributeAccessLevel("status"));
         assertEquals(ScopeLevel.PUBLISH_SUBSCRIBE, dynamicalEntityParser.getAttributeAccessLevel("type"));
         assertEquals(ScopeLevel.PUBLISH, dynamicalEntityParser.getAttributeAccessLevel("mass"));
-        assertEquals(ScopeLevel.NONE, dynamicalEntityParser.getAttributeAccessLevel("massRate"));
+        assertEquals(ScopeLevel.NONE, dynamicalEntityParser.getAttributeAccessLevel("mass_rate"));
+    }
+
+    @Test
+    void testRover() {
+        Field nameField = roverParser.getFieldForFomElement("name");
+        Field statusField = roverParser.getFieldForFomElement("status");
+        Field typeField = roverParser.getFieldForFomElement("type");
+        Field massField = roverParser.getFieldForFomElement("mass");
+        Field massRateField = roverParser.getFieldForFomElement("mass_rate");
+
+        assertNotNull(nameField);
+        assertNotNull(statusField);
+        assertNotNull(typeField);
+        assertNotNull(massField);
+        assertNotNull(massRateField);
+
+        Set<String> publishableAttributes = roverParser.getPublishableAttributeNames();
+        Set<String> subscribableAttributes = roverParser.getSubscribableAttributeNames();
+        assertEquals("HLAobjectRoot.PhysicalEntity.DynamicalEntity", roverParser.getFomClassName());
+        assertTrue(publishableAttributes.contains("name"));
+        assertTrue(subscribableAttributes.contains("status"));
+        assertTrue(publishableAttributes.contains("type"));
+        assertTrue(subscribableAttributes.contains("type"));
+        assertTrue(publishableAttributes.contains("mass"));
+        assertTrue(publishableAttributes.contains("mass"));
+        assertFalse(publishableAttributes.contains("mass_rate"));
+        assertFalse(subscribableAttributes.contains("mass_rate"));
+
+        assertEquals(ScopeLevel.PUBLISH, roverParser.getAttributeAccessLevel("name"));
+        assertEquals(ScopeLevel.SUBSCRIBE, roverParser.getAttributeAccessLevel("status"));
+        assertEquals(ScopeLevel.PUBLISH_SUBSCRIBE, roverParser.getAttributeAccessLevel("type"));
+        assertEquals(ScopeLevel.PUBLISH, roverParser.getAttributeAccessLevel("mass"));
+        assertEquals(ScopeLevel.NONE, roverParser.getAttributeAccessLevel("mass_rate"));
+    }
+
+    @Test
+    void testTransportRover() {
+        Field nameField = transportRoverParser.getFieldForFomElement("name");
+        Field statusField = transportRoverParser.getFieldForFomElement("status");
+        Field typeField = transportRoverParser.getFieldForFomElement("type");
+        Field massField = transportRoverParser.getFieldForFomElement("mass");
+        Field massRateField = transportRoverParser.getFieldForFomElement("mass_rate");
+        Field onboardCargoField = transportRoverParser.getFieldForFomElement("onboard_cargo");
+
+        assertNotNull(nameField);
+        assertNotNull(statusField);
+        assertNotNull(typeField);
+        assertNotNull(massField);
+        assertNotNull(massRateField);
+        assertNotNull(onboardCargoField);
+
+        Set<String> publishableAttributes = transportRoverParser.getPublishableAttributeNames();
+        Set<String> subscribableAttributes = transportRoverParser.getSubscribableAttributeNames();
+        assertEquals("HLAobjectRoot.PhysicalEntity.DynamicalEntity", roverParser.getFomClassName());
+        assertTrue(publishableAttributes.contains("name"));
+        assertTrue(subscribableAttributes.contains("status"));
+        assertTrue(publishableAttributes.contains("type"));
+        assertTrue(subscribableAttributes.contains("type"));
+        assertTrue(publishableAttributes.contains("mass"));
+        assertTrue(publishableAttributes.contains("mass"));
+        assertFalse(publishableAttributes.contains("mass_rate"));
+        assertFalse(subscribableAttributes.contains("mass_rate"));
+        assertTrue(publishableAttributes.contains("onboard_cargo"));
+
+        assertEquals(ScopeLevel.PUBLISH, transportRoverParser.getAttributeAccessLevel("name"));
+        assertEquals(ScopeLevel.SUBSCRIBE, transportRoverParser.getAttributeAccessLevel("status"));
+        assertEquals(ScopeLevel.PUBLISH_SUBSCRIBE, transportRoverParser.getAttributeAccessLevel("type"));
+        assertEquals(ScopeLevel.PUBLISH, transportRoverParser.getAttributeAccessLevel("mass"));
+        assertEquals(ScopeLevel.NONE, transportRoverParser.getAttributeAccessLevel("mass_rate"));
+        assertEquals(ScopeLevel.PUBLISH, transportRoverParser.getAttributeAccessLevel("onboard_cargo"));
     }
 
     // The following classes are meant to be representative of the SpaceFOM object hierarchy which is as follows:
@@ -193,5 +265,20 @@ class ObjectClassModelParserTest {
 
     static class Rover extends DynamicalEntity {
         public Rover() { super(); }
+    }
+
+    static class TransportRover extends Rover {
+        @Attribute(name = "onboard_cargo", coder = HLAinteger16BECoder.class, scope = ScopeLevel.PUBLISH)
+        private short onboardCargo;
+
+        public TransportRover() { super(); }
+
+        public short getOnboardCargo() {
+            return onboardCargo;
+        }
+
+        public void setOnboardCargo(short onboardCargo) {
+            this.onboardCargo = onboardCargo;
+        }
     }
 }

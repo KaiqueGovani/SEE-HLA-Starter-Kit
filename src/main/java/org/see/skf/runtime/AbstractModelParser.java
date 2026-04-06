@@ -40,7 +40,9 @@ public abstract class AbstractModelParser {
 
     // Effectively final - is resolved in the subclasses.
     private String fomClassName;
-    private Class<?> fomClass;
+
+    // The Java (native) class that represents the (object/interaction) class in the HLA FOM.
+    private Class<?> nativeRepresentation;
 
     private final Set<Field> fields;
     private final Map<String, Field> fomElementNameToField;
@@ -49,8 +51,8 @@ public abstract class AbstractModelParser {
     private final Map<Field, Method> fieldToGetter;
     private final Map<Field, Method> fieldToSetter;
 
-    protected AbstractModelParser(Class<?> fomClass) {
-        this.fomClass = fomClass;
+    protected AbstractModelParser(Class<?> nativeRepresentation) {
+        this.nativeRepresentation = nativeRepresentation;
         this.fields = new HashSet<>();
         this.fomElementNameToField = new HashMap<>();
         this.fieldToFomElementName = new HashMap<>();
@@ -63,7 +65,7 @@ public abstract class AbstractModelParser {
         if (hierarchyTraversalNeeded) {
             retrieveModelClassHierarchy();
         } else {
-            processFields(fomClass);
+            processFields(nativeRepresentation);
         }
     }
 
@@ -87,7 +89,7 @@ public abstract class AbstractModelParser {
 
         Method getter;
         try {
-            getter = fomClass.getMethod(getterName);
+            getter = nativeRepresentation.getMethod(getterName);
             fieldToGetter.put(field, getter);
         } catch (NoSuchMethodException e) {
             String fieldName = field.getName();
@@ -96,7 +98,7 @@ public abstract class AbstractModelParser {
 
         try {
             Class<?> getterReturnType = getter.getReturnType();
-            Method setter = fomClass.getMethod(setterName, getterReturnType);
+            Method setter = nativeRepresentation.getMethod(setterName, getterReturnType);
             fieldToSetter.put(field, setter);
         } catch (NoSuchMethodException e) {
             String fieldName = field.getName();
@@ -144,7 +146,7 @@ public abstract class AbstractModelParser {
 
     private List<Class<?>> getClassHierarchy() {
         List<Class<?>> hierarchy = new ArrayList<>();
-        Class<?> modelClass = getFomClass();
+        Class<?> modelClass = getNativeRepresentation();
 
         while (modelClass != null && modelClass != Object.class) {
             hierarchy.add(0, modelClass);
@@ -166,12 +168,12 @@ public abstract class AbstractModelParser {
         this.fomClassName = fomClassName;
     }
 
-    public final Class<?> getFomClass() {
-        return fomClass;
+    public final Class<?> getNativeRepresentation() {
+        return nativeRepresentation;
     }
 
-    public final void setFomClass(Class<?> fomClass) {
-        this.fomClass = fomClass;
+    public final void setNativeRepresentation(Class<?> nativeRepresentation) {
+        this.nativeRepresentation = nativeRepresentation;
     }
 
     public final Set<Field> getAllFields() {

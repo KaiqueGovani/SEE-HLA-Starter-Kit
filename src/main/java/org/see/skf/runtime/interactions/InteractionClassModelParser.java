@@ -51,15 +51,18 @@ public final class InteractionClassModelParser extends AbstractModelParser {
 
     @Override
     protected boolean retrieveModelType() {
-        InteractionClass interactionClass = getFomClass().getAnnotation(InteractionClass.class);
+        InteractionClass interactionClass = getNativeRepresentation().getAnnotation(InteractionClass.class);
 
-        Class<?> superClass = getFomClass().getSuperclass();
-        InteractionClass superInteractionClassAnnotation = superClass.getAnnotation(InteractionClass.class);
-
-        boolean traversalNeeded = superInteractionClassAnnotation != null;
+        boolean traversalNeeded = false;
         if (interactionClass == null) {
-            interactionClass = superClass.getAnnotation(InteractionClass.class);
-            setFomClass(superClass);
+            Class<?> ancestor = locateAncestorWithAnnotation(getNativeRepresentation());
+            interactionClass = ancestor.getAnnotation(InteractionClass.class);
+            traversalNeeded = true;
+        }
+
+        Class<?> superClass = getNativeRepresentation().getSuperclass();
+        if (superClass != null && superClass.isAnnotationPresent(InteractionClass.class)) {
+            traversalNeeded = true;
         }
 
         setFomClassName(interactionClass.name());
@@ -83,6 +86,19 @@ public final class InteractionClassModelParser extends AbstractModelParser {
                 parameterNames.add(parameterName);
             }
         }
+    }
+
+    private Class<?> locateAncestorWithAnnotation(Class<?> clazz) {
+        while (clazz != Object.class) {
+            clazz = clazz.getSuperclass();
+            InteractionClass annotation = clazz.getAnnotation(InteractionClass.class);
+
+            if (annotation != null) {
+                break;
+            }
+        }
+
+        return clazz;
     }
 
     @Override

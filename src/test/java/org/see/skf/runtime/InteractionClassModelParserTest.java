@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.see.skf.annotations.InteractionClass;
 import org.see.skf.annotations.Parameter;
 import org.see.skf.util.encoding.HLAfloat64LECoder;
+import org.see.skf.util.encoding.HLAinteger16BECoder;
 import org.see.skf.util.encoding.HLAunicodeStringCoder;
 import org.see.skf.util.models.ModeTransitionRequest;
 import org.see.skf.runtime.interactions.InteractionClassModelParser;
@@ -18,6 +19,7 @@ class InteractionClassModelParserTest {
     final InteractionClassModelParser baseInteractionParser = new InteractionClassModelParser(BaseInteraction.class);
     final InteractionClassModelParser dockingRequestInteractionParser = new InteractionClassModelParser(DockingRequestInteraction.class);
     final InteractionClassModelParser repairRequestInteractionParser = new InteractionClassModelParser(RepairRequestInteraction.class);
+    final InteractionClassModelParser repairRequestCompleteInteractionParser = new InteractionClassModelParser(RepairRequestCompleteInteraction.class);
 
     @Test
     void testMetadata() {
@@ -75,6 +77,24 @@ class InteractionClassModelParserTest {
         Set<String> parameterNames = repairRequestInteractionParser.getParameterNames();
         assertTrue(parameterNames.contains("sender"));
         assertTrue(parameterNames.contains("target_object"));
+    }
+
+    @Test
+    void testRepairRequestCompleteFields() {
+        Field senderField = repairRequestCompleteInteractionParser.getFieldForFomElement("sender");
+        Field targetObjectField = repairRequestCompleteInteractionParser.getFieldForFomElement("target_object");
+        Field messageIdField = repairRequestCompleteInteractionParser.getFieldForFomElement("messageId");
+        Field repairCodeField = repairRequestCompleteInteractionParser.getFieldForFomElement("repair_code");
+
+        assertNotNull(senderField);
+        assertNotNull(targetObjectField);
+        assertNull(messageIdField);
+        assertNotNull(repairCodeField);
+
+        Set<String> parameterNames = repairRequestCompleteInteractionParser.getParameterNames();
+        assertTrue(parameterNames.contains("sender"));
+        assertTrue(parameterNames.contains("target_object"));
+        assertTrue(parameterNames.contains("repair_code"));
     }
 
     @InteractionClass(name = "HLAinteractionRoot.BaseInteraction")
@@ -138,6 +158,21 @@ class InteractionClassModelParserTest {
 
         public void setMessageId(String messageId) {
             this.messageId = messageId;
+        }
+    }
+
+    static class RepairRequestCompleteInteraction extends RepairRequestInteraction {
+        @Parameter(name = "repair_code", coder = HLAinteger16BECoder.class)
+        private short repairCode;
+
+        public RepairRequestCompleteInteraction() { super(); }
+
+        public short getRepairCode() {
+            return repairCode;
+        }
+
+        public void setRepairCode(short repairCode) {
+            this.repairCode = repairCode;
         }
     }
 }

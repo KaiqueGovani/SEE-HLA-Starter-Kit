@@ -51,15 +51,18 @@ public final class ObjectClassModelParser extends AbstractModelParser {
 
     @Override
     protected boolean retrieveModelType() {
-        ObjectClass objectClass = getFomClass().getAnnotation(ObjectClass.class);
+        ObjectClass objectClass = getNativeRepresentation().getAnnotation(ObjectClass.class);
 
-        Class<?> superClass = getFomClass().getSuperclass();
-        ObjectClass superObjectClassAnnotation = superClass.getAnnotation(ObjectClass.class);
-
-        boolean traversalNeeded = superObjectClassAnnotation != null;
+        boolean traversalNeeded = false;
         if (objectClass == null) {
-            objectClass = superClass.getAnnotation(ObjectClass.class);
-            setFomClass(superClass);
+            Class<?> ancestor = locateAncestorWithAnnotation(getNativeRepresentation());
+            objectClass = ancestor.getAnnotation(ObjectClass.class);
+            traversalNeeded = true;
+        }
+
+        Class<?> superClass = getNativeRepresentation().getSuperclass();
+        if (superClass != null && superClass.isAnnotationPresent(ObjectClass.class)) {
+            traversalNeeded = true;
         }
 
         setFomClassName(objectClass.name());
@@ -85,6 +88,19 @@ public final class ObjectClassModelParser extends AbstractModelParser {
                 setAttributeAccessLevel(attributeName, scopeLevel);
             }
         }
+    }
+
+    private Class<?> locateAncestorWithAnnotation(Class<?> clazz) {
+        while (clazz != Object.class) {
+            clazz = clazz.getSuperclass();
+            ObjectClass annotation = clazz.getAnnotation(ObjectClass.class);
+
+            if (annotation != null) {
+                break;
+            }
+        }
+
+        return clazz;
     }
 
     @Override

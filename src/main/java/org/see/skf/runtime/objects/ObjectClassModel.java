@@ -162,7 +162,7 @@ public final class ObjectClassModel extends AbstractClassModel {
     }
 
     public Class<?> getObjectClass() {
-        return parser.getFomClass();
+        return parser.getNativeRepresentation();
     }
 
     public AttributeHandleSet getPublicationSet() {
