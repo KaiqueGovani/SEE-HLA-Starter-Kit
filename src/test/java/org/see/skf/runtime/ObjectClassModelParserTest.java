@@ -17,148 +17,180 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ObjectClassModelParserTest {
-    final ObjectClassModelParser parser = new ObjectClassModelParser(ExecutionConfiguration.class);
+    final ObjectClassModelParser exCOParser = new ObjectClassModelParser(ExecutionConfiguration.class);
+    final ObjectClassModelParser physicalEntityParser = new ObjectClassModelParser(PhysicalEntity.class);
+    final ObjectClassModelParser dynamicalEntityParser = new ObjectClassModelParser(DynamicalEntity.class);
+    final ObjectClassModelParser roverParser = new ObjectClassModelParser(Rover.class);
 
     @Test
     void testMetadata() {
-        assertEquals("HLAobjectRoot.ExecutionConfiguration", parser.getFomClassName());
-        assertNotNull(parser.getFieldForFomElement("root_frame_name"));
-        assertNotNull(parser.getFieldForFomElement("least_common_time_step"));
-        assertNotNull(parser.getFieldForFomElement("scenario_time_epoch"));
+        assertEquals("HLAobjectRoot.ExecutionConfiguration", exCOParser.getFomClassName());
+        assertNotNull(exCOParser.getFieldForFomElement("root_frame_name"));
+        assertNotNull(exCOParser.getFieldForFomElement("least_common_time_step"));
+        assertNotNull(exCOParser.getFieldForFomElement("scenario_time_epoch"));
 
-        Field rootFrameName = parser.getFieldForFomElement("root_frame_name");
-        Field leastCommonTimeStep = parser.getFieldForFomElement("least_common_time_step");
-        Field scenarioTimeEpoch = parser.getFieldForFomElement("scenario_time_epoch");
-        assertNotNull(parser.getFieldGetter(rootFrameName));
-        assertNotNull(parser.getFieldSetter(rootFrameName));
-        assertNotNull(parser.getFieldGetter(leastCommonTimeStep));
-        assertNotNull(parser.getFieldSetter(leastCommonTimeStep));
-        assertNotNull(parser.getFieldGetter(scenarioTimeEpoch));
-        assertNotNull(parser.getFieldSetter(scenarioTimeEpoch));
+        Field rootFrameName = exCOParser.getFieldForFomElement("root_frame_name");
+        Field leastCommonTimeStep = exCOParser.getFieldForFomElement("least_common_time_step");
+        Field scenarioTimeEpoch = exCOParser.getFieldForFomElement("scenario_time_epoch");
+        assertNotNull(exCOParser.getFieldGetter(rootFrameName));
+        assertNotNull(exCOParser.getFieldSetter(rootFrameName));
+        assertNotNull(exCOParser.getFieldGetter(leastCommonTimeStep));
+        assertNotNull(exCOParser.getFieldSetter(leastCommonTimeStep));
+        assertNotNull(exCOParser.getFieldGetter(scenarioTimeEpoch));
+        assertNotNull(exCOParser.getFieldSetter(scenarioTimeEpoch));
 
-        assertNotNull(parser.getFieldCoder(rootFrameName));
-        assertNotNull(CoderCollection.query(parser.getFieldCoder(rootFrameName)));
-        assertNotNull(parser.getFieldCoder(leastCommonTimeStep));
-        assertNotNull(CoderCollection.query(parser.getFieldCoder(leastCommonTimeStep)));
-        assertNotNull(parser.getFieldCoder(scenarioTimeEpoch));
-        assertNotNull(CoderCollection.query(parser.getFieldCoder(scenarioTimeEpoch)));
+        assertNotNull(exCOParser.getFieldCoder(rootFrameName));
+        assertNotNull(CoderCollection.query(exCOParser.getFieldCoder(rootFrameName)));
+        assertNotNull(exCOParser.getFieldCoder(leastCommonTimeStep));
+        assertNotNull(CoderCollection.query(exCOParser.getFieldCoder(leastCommonTimeStep)));
+        assertNotNull(exCOParser.getFieldCoder(scenarioTimeEpoch));
+        assertNotNull(CoderCollection.query(exCOParser.getFieldCoder(scenarioTimeEpoch)));
 
-        assertEquals(ScopeLevel.SUBSCRIBE, parser.getAttributeAccessLevel("root_frame_name"));
-        assertEquals(ScopeLevel.SUBSCRIBE, parser.getAttributeAccessLevel("least_common_time_step"));
-        assertEquals(ScopeLevel.SUBSCRIBE, parser.getAttributeAccessLevel("scenario_time_epoch"));
+        assertEquals(ScopeLevel.SUBSCRIBE, exCOParser.getAttributeAccessLevel("root_frame_name"));
+        assertEquals(ScopeLevel.SUBSCRIBE, exCOParser.getAttributeAccessLevel("least_common_time_step"));
+        assertEquals(ScopeLevel.SUBSCRIBE, exCOParser.getAttributeAccessLevel("scenario_time_epoch"));
     }
 
     @Test
     void testMethodGeneration() {
-        assertEquals("getValue", parser.generateMethodName("get", "value"));
-        assertEquals("setValue", parser.generateMethodName("set", "value"));
-        assertEquals("getPositionVector", parser.generateMethodName("get", "positionVector"));
-        assertEquals("setPositionVector", parser.generateMethodName("set", "positionVector"));
-        assertEquals("getPhysicalInterface", parser.generateMethodName("get", "physicalInterface"));
-        assertEquals("setPhysicalInterface", parser.generateMethodName("set", "physicalInterface"));
+        assertEquals("getValue", exCOParser.generateMethodName("get", "value"));
+        assertEquals("setValue", exCOParser.generateMethodName("set", "value"));
+        assertEquals("getPositionVector", exCOParser.generateMethodName("get", "positionVector"));
+        assertEquals("setPositionVector", exCOParser.generateMethodName("set", "positionVector"));
+        assertEquals("getPhysicalInterface", exCOParser.generateMethodName("get", "physicalInterface"));
+        assertEquals("setPhysicalInterface", exCOParser.generateMethodName("set", "physicalInterface"));
     }
 
     @Test
-    void testSubclassInheritsParentAttributes() {
-        ObjectClassModelParser subclassParser = new ObjectClassModelParser(TestChildObject.class);
+    void testPhysicalEntityFields() {
+        Field nameField = physicalEntityParser.getFieldForFomElement("name");
+        Field statusField = physicalEntityParser.getFieldForFomElement("status");
+        Field typeField = physicalEntityParser.getFieldForFomElement("type");
 
-        Set<String> publishableAttributes = subclassParser.getPublishableAttributeNames();
-        assertTrue(publishableAttributes.contains("parent_name"));
-        assertTrue(publishableAttributes.contains("shared_status"));
-        assertTrue(publishableAttributes.contains("child_mass"));
-        assertFalse(publishableAttributes.contains("parent_subscribe_only"));
+        assertNotNull(nameField);
+        assertNotNull(statusField);
+        assertNotNull(typeField);
 
-        Set<String> subscribableAttributes = subclassParser.getSubscribableAttributeNames();
-        assertTrue(subscribableAttributes.contains("parent_name"));
-        assertTrue(subscribableAttributes.contains("shared_status"));
-        assertTrue(subscribableAttributes.contains("child_mass"));
-        assertTrue(subscribableAttributes.contains("parent_subscribe_only"));
+        Set<String> publishableAttributes = physicalEntityParser.getPublishableAttributeNames();
+        Set<String> subscribableAttributes = physicalEntityParser.getSubscribableAttributeNames();
+        assertEquals("HLAobjectRoot.PhysicalEntity", physicalEntityParser.getFomClassName());
+        assertTrue(publishableAttributes.contains("name"));
+        assertTrue(subscribableAttributes.contains("status"));
+        assertTrue(publishableAttributes.contains("type"));
 
-        Field parentName = subclassParser.getFieldForFomElement("parent_name");
-        Field parentState = subclassParser.getFieldForFomElement("shared_status");
-        Field childMass = subclassParser.getFieldForFomElement("child_mass");
-        Field parentSubscribeOnly = subclassParser.getFieldForFomElement("parent_subscribe_only");
-
-        assertNotNull(parentName);
-        assertNotNull(parentState);
-        assertNotNull(childMass);
-        assertNotNull(parentSubscribeOnly);
-
-        assertEquals(TestParentObject.class, parentName.getDeclaringClass());
-        assertEquals(TestChildObject.class, parentState.getDeclaringClass());
-        assertEquals(TestChildObject.class, childMass.getDeclaringClass());
-
-        assertNotNull(subclassParser.getFieldGetter(parentName));
-        assertNotNull(subclassParser.getFieldSetter(parentName));
-        assertNotNull(subclassParser.getFieldGetter(parentState));
-        assertNotNull(subclassParser.getFieldSetter(parentState));
-
-        assertEquals(ScopeLevel.PUBLISH_SUBSCRIBE, subclassParser.getAttributeAccessLevel("parent_name"));
-        assertEquals(ScopeLevel.PUBLISH_SUBSCRIBE, subclassParser.getAttributeAccessLevel("shared_status"));
-        assertEquals(ScopeLevel.PUBLISH_SUBSCRIBE, subclassParser.getAttributeAccessLevel("child_mass"));
-        assertEquals(ScopeLevel.SUBSCRIBE, subclassParser.getAttributeAccessLevel("parent_subscribe_only"));
+        assertEquals(ScopeLevel.PUBLISH, physicalEntityParser.getAttributeAccessLevel("name"));
+        assertEquals(ScopeLevel.SUBSCRIBE, physicalEntityParser.getAttributeAccessLevel("status"));
+        assertEquals(ScopeLevel.PUBLISH_SUBSCRIBE, physicalEntityParser.getAttributeAccessLevel("type"));
     }
 
-    @ObjectClass(name = "HLAobjectRoot.TestParentObject")
-    public static class TestParentObject {
-        @Attribute(name = "parent_name", coder = HLAunicodeStringCoder.class)
-        private String parentName = "";
+    @Test
+    void testDynamicalEntityFields() {
+        Field nameField = dynamicalEntityParser.getFieldForFomElement("name");
+        Field statusField = dynamicalEntityParser.getFieldForFomElement("status");
+        Field typeField = dynamicalEntityParser.getFieldForFomElement("type");
+        Field massField = dynamicalEntityParser.getFieldForFomElement("mass");
+        Field massRateField = dynamicalEntityParser.getFieldForFomElement("mass_rate");
 
-        @Attribute(name = "shared_status", coder = HLAunicodeStringCoder.class)
-        private String sharedStatus = "";
+        assertNotNull(nameField);
+        assertNotNull(statusField);
+        assertNotNull(typeField);
+        assertNotNull(massField);
+        assertNotNull(massRateField);
 
-        @Attribute(name = "parent_subscribe_only", coder = HLAunicodeStringCoder.class, scope = ScopeLevel.SUBSCRIBE)
-        private String parentSubscribeOnly = "";
+        Set<String> publishableAttributes = dynamicalEntityParser.getPublishableAttributeNames();
+        Set<String> subscribableAttributes = dynamicalEntityParser.getSubscribableAttributeNames();
+        assertEquals("HLAobjectRoot.PhysicalEntity.DynamicalEntity", dynamicalEntityParser.getFomClassName());
+        assertTrue(publishableAttributes.contains("name"));
+        assertTrue(subscribableAttributes.contains("status"));
+        assertTrue(publishableAttributes.contains("type"));
+        assertTrue(subscribableAttributes.contains("type"));
+        assertTrue(publishableAttributes.contains("mass"));
+        assertTrue(publishableAttributes.contains("mass"));
+        assertFalse(publishableAttributes.contains("mass_rate"));
+        assertFalse(subscribableAttributes.contains("mass_rate"));
 
-        public String getParentName() {
-            return parentName;
+        assertEquals(ScopeLevel.PUBLISH, dynamicalEntityParser.getAttributeAccessLevel("name"));
+        assertEquals(ScopeLevel.SUBSCRIBE, dynamicalEntityParser.getAttributeAccessLevel("status"));
+        assertEquals(ScopeLevel.PUBLISH_SUBSCRIBE, dynamicalEntityParser.getAttributeAccessLevel("type"));
+        assertEquals(ScopeLevel.PUBLISH, dynamicalEntityParser.getAttributeAccessLevel("mass"));
+        assertEquals(ScopeLevel.NONE, dynamicalEntityParser.getAttributeAccessLevel("massRate"));
+    }
+
+    // The following classes are meant to be representative of the SpaceFOM object hierarchy which is as follows:
+    // HLAobjectRoot -> PhysicalEntity -> DynamicalEntity -> Rover (a custom addition for test purposes)
+    @ObjectClass(name = "HLAobjectRoot.PhysicalEntity")
+    static class PhysicalEntity {
+        @Attribute(name = "name", coder = HLAunicodeStringCoder.class, scope = ScopeLevel.PUBLISH)
+        private String name;
+
+        @Attribute(name = "status", coder = HLAunicodeStringCoder.class, scope = ScopeLevel.SUBSCRIBE)
+        private String status;
+
+        @Attribute(name = "type", coder = HLAunicodeStringCoder.class)
+        private String type;
+
+        public PhysicalEntity() {
+            this.name = "physical_entity_1";
+            this.type = "Vehicle";
+            this.status = "Dormant";
         }
 
-        public void setParentName(String parentName) {
-            this.parentName = parentName;
+        public String getName() {
+            return name;
         }
 
-        public String getSharedStatus() {
-            return sharedStatus;
+        public void setName(String name) {
+            this.name = name;
         }
 
-        public void setSharedStatus(String sharedStatus) {
-            this.sharedStatus = sharedStatus;
+        public String getStatus() {
+            return status;
         }
 
-        public String getParentSubscribeOnly() {
-            return parentSubscribeOnly;
+        public void setStatus(String status) {
+            this.status = status;
         }
 
-        public void setParentSubscribeOnly(String parentSubscribeOnly) {
-            this.parentSubscribeOnly = parentSubscribeOnly;
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
         }
     }
 
-    @ObjectClass(name = "HLAobjectRoot.TestParentObject.TestChildObject")
-    public static class TestChildObject extends TestParentObject {
-        @Attribute(name = "shared_status", coder = HLAunicodeStringCoder.class)
-        private String sharedStatus = "";
+    @ObjectClass(name = "HLAobjectRoot.PhysicalEntity.DynamicalEntity")
+    static class DynamicalEntity extends PhysicalEntity {
+        @Attribute(name = "mass", coder = HLAfloat64LECoder.class, scope = ScopeLevel.PUBLISH)
+        private double mass;
 
-        @Attribute(name = "child_mass", coder = HLAfloat64LECoder.class)
-        private Double childMass = 0.0;
+        @Attribute(name = "mass_rate", coder = HLAfloat64LECoder.class, scope = ScopeLevel.NONE)
+        private double massRate;
 
-        @Override
-        public String getSharedStatus() {
-            return sharedStatus;
+        public DynamicalEntity() {
+            this.mass = 0.0;
+            this.massRate = 0.0;
         }
 
-        @Override
-        public void setSharedStatus(String sharedStatus) {
-            this.sharedStatus = sharedStatus;
+        public Double getMass() {
+            return mass;
         }
 
-        public Double getChildMass() {
-            return childMass;
+        public void setMass(Double mass) {
+            this.mass = mass;
         }
 
-        public void setChildMass(Double childMass) {
-            this.childMass = childMass;
+        public double getMassRate() {
+            return massRate;
         }
+
+        public void setMassRate(double massRate) {
+            this.massRate = massRate;
+        }
+    }
+
+    static class Rover extends DynamicalEntity {
+        public Rover() { super(); }
     }
 }

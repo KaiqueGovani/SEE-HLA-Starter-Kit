@@ -50,24 +50,39 @@ public final class InteractionClassModelParser extends AbstractModelParser {
     }
 
     @Override
-    protected void retrieveModelStructure() {
+    protected boolean retrieveModelType() {
+        boolean traversalNeeded = false;
         InteractionClass interactionClass = getFomClass().getAnnotation(InteractionClass.class);
-        setFomClassName(interactionClass.name());
 
-        parameterNames = new HashSet<>();
-        Field[] classFields = getFomClass().getDeclaredFields();
+        if (interactionClass == null) {
+            Class<?> superClass = getFomClass().getSuperclass();
+            interactionClass = superClass.getAnnotation(InteractionClass.class);
+            setFomClass(superClass);
+            traversalNeeded = true;
+        }
+
+        setFomClassName(interactionClass.name());
+        this.parameterNames = new HashSet<>();
+
+
+        logger.debug("Generated model class structure for the HLA interaction class <{}>.", interactionClass.name());
+        return traversalNeeded;
+    }
+
+    @Override
+    protected void processFields(Class<?> clazz) {
+        Field[] classFields = clazz.getDeclaredFields();
         for (Field field : classFields) {
             if (field.isAnnotationPresent(Parameter.class)) {
                 Parameter parameter = field.getAnnotation(Parameter.class);
                 String parameterName = parameter.name();
+
                 Class<? extends Coder<?>> coderClass = parameter.coder();
 
                 addField(parameterName, field, coderClass);
                 parameterNames.add(parameterName);
             }
         }
-
-        logger.debug("Generated model class structure for the HLA interaction class <{}>.", interactionClass.name());
     }
 
     @Override
@@ -99,31 +114,31 @@ public final class InteractionClassModelParser extends AbstractModelParser {
     }
 
     public void decode(Object element, ParameterHandleValueMap parameterHandleToValue, Map<ParameterHandle, String> parameterHandleToName) {
-            try {
-                for (var entry : parameterHandleToValue.entrySet()) {
-                    String parameterName = parameterHandleToName.get(entry.getKey());
+        try {
+            for (var entry : parameterHandleToValue.entrySet()) {
+                String parameterName = parameterHandleToName.get(entry.getKey());
 
-                    Field field = getFieldForFomElement(parameterName);
-                    var coderClass = getFieldCoder(field);
-                    Coder<?> coder = CoderCollection.query(coderClass);
+                Field field = getFieldForFomElement(parameterName);
+                var coderClass = getFieldCoder(field);
+                Coder<?> coder = CoderCollection.query(coderClass);
 
-                    var decode = coderClass.getMethod("decode", byte[].class);
-                    var encodedValue = entry.getValue();
+                var decode = coderClass.getMethod("decode", byte[].class);
+                var encodedValue = entry.getValue();
 
-                    // IntelliJ will warn you here that the following line is incorrect. Changing the second argument to
-                    // Object.class makes the warning go away. Be wise, and do not heed its words. All is as it should be.
-                    // Using byte[].class for the parameter type is, in fact, the correct choice - decoding won't work
-                    // otherwise.
-                    Object newFieldValue = decode.invoke(coder, encodedValue);
-                    Method setter = getFieldSetter(field);
+                // IntelliJ will warn you here that the following line is incorrect. Changing the second argument to
+                // Object.class makes the warning go away. Be wise, and do not heed its words. All is as it should be.
+                // Using byte[].class for the parameter type is, in fact, the correct choice - decoding won't work
+                // otherwise.
+                Object newFieldValue = decode.invoke(coder, encodedValue);
+                Method setter = getFieldSetter(field);
 
-                    setter.invoke(element, newFieldValue);
-                }
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                throw new IllegalStateException("Unexpected problem encountered when trying to decode the latest values for an HLA interaction <" + element + "> of the type <" + getFomClassName() + ">" + e);
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Mismatch in fields of interaction class detected. Ensure object fields are properly initialized and the getter and setter methods are of the correct type.");
+                setter.invoke(element, newFieldValue);
             }
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            throw new IllegalStateException("Unexpected problem encountered when trying to decode the latest values for an HLA interaction <" + element + "> of the type <" + getFomClassName() + ">" + e);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Mismatch in fields of interaction class detected. Ensure object fields are properly initialized and the getter and setter methods are of the correct type.");
+        }
     }
 
     public Set<String> getParameterNames() {

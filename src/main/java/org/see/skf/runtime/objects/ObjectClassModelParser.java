@@ -39,12 +39,7 @@ import org.see.skf.runtime.ScopeLevel;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public final class ObjectClassModelParser extends AbstractModelParser {
     private Set<String> publishableAttributeNames;
@@ -55,40 +50,41 @@ public final class ObjectClassModelParser extends AbstractModelParser {
     }
 
     @Override
-    protected void retrieveModelStructure() {
+    protected boolean retrieveModelType() {
         ObjectClass objectClass = getFomClass().getAnnotation(ObjectClass.class);
+
+        Class<?> superClass = getFomClass().getSuperclass();
+        ObjectClass superObjectClassAnnotation = superClass.getAnnotation(ObjectClass.class);
+
+        boolean traversalNeeded = superObjectClassAnnotation != null;
+        if (objectClass == null) {
+            objectClass = superClass.getAnnotation(ObjectClass.class);
+            setFomClass(superClass);
+        }
+
         setFomClassName(objectClass.name());
         this.publishableAttributeNames = new HashSet<>();
         this.subscribableAttributeNames = new HashSet<>();
 
-        for (Class<?> modelClass : getModelHierarchy()) {
-            Field[] classFields = modelClass.getDeclaredFields();
-            for (Field field : classFields) {
-                if (field.isAnnotationPresent(Attribute.class)) {
-                    Attribute attribute = field.getAnnotation(Attribute.class);
-                    String attributeName = attribute.name();
-                    Class<? extends Coder<?>> coderClass = attribute.coder();
-                    ScopeLevel scopeLevel = attribute.scope();
-
-                    addField(attributeName, field, coderClass);
-                    setAttributeAccessLevel(attributeName, scopeLevel);
-                }
-            }
-        }
-
         logger.debug("Generated model class structure for the HLA object class <{}>.", objectClass.name());
+        return traversalNeeded;
     }
 
-    private List<Class<?>> getModelHierarchy() {
-        List<Class<?>> hierarchy = new ArrayList<>();
-        Class<?> modelClass = getFomClass();
+    @Override
+    protected void processFields(Class<?> clazz) {
+        Field[] classFields = clazz.getDeclaredFields();
+        for (Field field : classFields) {
+            if (field.isAnnotationPresent(Attribute.class)) {
+                Attribute attribute = field.getAnnotation(Attribute.class);
+                String attributeName = attribute.name();
 
-        while (modelClass != null && modelClass != Object.class) {
-            hierarchy.add(0, modelClass);
-            modelClass = modelClass.getSuperclass();
+                Class<? extends Coder<?>> coderClass = attribute.coder();
+                ScopeLevel scopeLevel = attribute.scope();
+
+                addField(attributeName, field, coderClass);
+                setAttributeAccessLevel(attributeName, scopeLevel);
+            }
         }
-
-        return hierarchy;
     }
 
     @Override
@@ -158,9 +154,6 @@ public final class ObjectClassModelParser extends AbstractModelParser {
     }
 
     private void setAttributeAccessLevel(String attributeName, ScopeLevel scopeLevel) {
-        publishableAttributeNames.remove(attributeName);
-        subscribableAttributeNames.remove(attributeName);
-
         if (scopeLevel == ScopeLevel.PUBLISH_SUBSCRIBE) {
             publishableAttributeNames.add(attributeName);
             subscribableAttributeNames.add(attributeName);

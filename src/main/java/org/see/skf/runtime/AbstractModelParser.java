@@ -32,10 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public abstract class AbstractModelParser {
     protected static final Logger logger = LoggerFactory.getLogger(AbstractModelParser.class);
@@ -43,8 +40,8 @@ public abstract class AbstractModelParser {
 
     // Effectively final - is resolved in the subclasses.
     private String fomClassName;
+    private Class<?> fomClass;
 
-    private final Class<?> fomClass;
     private final Set<Field> fields;
     private final Map<String, Field> fomElementNameToField;
     private final Map<Field, String> fieldToFomElementName;
@@ -61,10 +58,26 @@ public abstract class AbstractModelParser {
         this.fieldToGetter = new HashMap<>();
         this.fieldToSetter = new HashMap<>();
 
-        retrieveModelStructure();
+        boolean hierarchyTraversalNeeded = retrieveModelType();
+
+        if (hierarchyTraversalNeeded) {
+            retrieveModelClassHierarchy();
+        } else {
+            processFields(fomClass);
+        }
     }
 
-    protected abstract void retrieveModelStructure();
+    private void retrieveModelClassHierarchy() {
+        List<Class<?>> classHierarchy = getClassHierarchy();
+
+        if (!classHierarchy.isEmpty()) {
+            classHierarchy.forEach(this::processFields);
+        }
+    }
+
+    protected abstract boolean retrieveModelType();
+
+    protected abstract void processFields(Class<?> clazz);
 
     public abstract Map<String, byte[]> encode(Object element);
 
@@ -91,7 +104,7 @@ public abstract class AbstractModelParser {
         }
     }
 
-    public String generateMethodName(String prefix, String fieldName) {
+    public final String generateMethodName(String prefix, String fieldName) {
         String[] fieldNameSplit = fieldName.split(REGEX);
 
         for (int i = 0; i < fieldNameSplit.length; i++) {
@@ -108,17 +121,17 @@ public abstract class AbstractModelParser {
         return result.toString();
     }
 
-    public void addField(String fomName, Field field, Class<? extends Coder<?>> coder) {
+    public final void addField(String fomName, Field field, Class<? extends Coder<?>> coder) {
         // Fields have 3 KEY features: FOM name (attribute/parameter), and a Coder.
-        // Access level can vary because objects have them at the attribute level, whereas interactions have them at
+        // Scope level can vary because objects have them at the attribute level, whereas interactions have them at
         // the class level. This functionality is implemented by the subclasses respectively.
-        Field previousField = fomElementNameToField.get(fomName);
-        if (previousField != null) {
-            fields.remove(previousField);
-            fieldToFomElementName.remove(previousField);
-            fieldToCoder.remove(previousField);
-            fieldToGetter.remove(previousField);
-            fieldToSetter.remove(previousField);
+        Field fieldInParent = fomElementNameToField.get(fomName);
+
+        // Disallow for attributes to be re-evaluated by subclasses. Java does not permit the overloading of
+        // class fields and the SKF runtime mirrors the rules of the language.
+        if (fieldInParent != null) {
+            String parentFieldName = getFomElementNameForField(fieldInParent);
+            logger.warn("Redefining the field <{}> is redundant. It is already defined in a parent class.", parentFieldName);
         }
 
         this.fields.add(field);
@@ -129,39 +142,55 @@ public abstract class AbstractModelParser {
         this.fieldToCoder.put(field, coder);
     }
 
+    public final List<Class<?>> getClassHierarchy() {
+        List<Class<?>> hierarchy = new ArrayList<>();
+        Class<?> modelClass = getFomClass();
+
+        while (modelClass != null && modelClass != Object.class) {
+            hierarchy.add(0, modelClass);
+            modelClass = modelClass.getSuperclass();
+        }
+
+        return hierarchy;
+    }
+
     private String capitalize(String word) {
         return word.substring(0, 1).toUpperCase() + word.substring(1);
     }
 
-    public String getFomClassName() {
+    public final String getFomClassName() {
         return fomClassName;
     }
 
-    public void setFomClassName(String fomClassName) {
+    public final void setFomClassName(String fomClassName) {
         this.fomClassName = fomClassName;
     }
 
-    public Class<?> getFomClass() {
+    public final Class<?> getFomClass() {
         return fomClass;
     }
 
-    public Set<Field> getAllFields() {
+    public final void setFomClass(Class<?> fomClass) {
+        this.fomClass = fomClass;
+    }
+
+    public final Set<Field> getAllFields() {
         return fields;
     }
 
-    public Field getFieldForFomElement(String fomName) {
+    public final Field getFieldForFomElement(String fomName) {
         return fomElementNameToField.get(fomName);
     }
 
-    public String getFomElementNameForField(Field field) {
+    public final String getFomElementNameForField(Field field) {
         return fieldToFomElementName.get(field);
     }
 
-    public Method getFieldGetter(Field field) {
+    public final Method getFieldGetter(Field field) {
         return fieldToGetter.get(field);
     }
 
-    public Method getFieldSetter(Field field) {
+    public final Method getFieldSetter(Field field) {
         return fieldToSetter.get(field);
     }
 

@@ -146,10 +146,16 @@ public abstract class SKBaseFederate implements SKFederateInterface {
         logger.debug("The RTI ambassador has been disconnected from its RTI.");
     }
 
+    /* This method effectively guarantees that an ObjectClass or InteractionClass annotation is present on the superclass
+     * of the supplied class at the bare minimum.
+     */
     private void verifyAnnotationExists(Class<?> targetClass, Class<? extends Annotation> annotationClass) {
         String errorMessage = "Failed to parse the class " + targetClass.getName() + " because it is missing the " + annotationClass.getName() + " annotation.";
         if (!targetClass.isAnnotationPresent(annotationClass)) {
-            throw new IllegalStateException(errorMessage);
+            Class<?> superClass = targetClass.getSuperclass();
+            if (!(superClass != null && superClass != Object.class && superClass.isAnnotationPresent(annotationClass))) {
+                throw new IllegalStateException(errorMessage);
+            }
         }
     }
 
