@@ -23,7 +23,7 @@ class ObjectClassModelParserTest {
     final ObjectClassModelParser roverParser = new ObjectClassModelParser(Rover.class);
 
     @Test
-    void testMetadata() {
+    void testBasicMetadata() {
         assertEquals("HLAobjectRoot.ExecutionConfiguration", exCOParser.getFomClassName());
         assertNotNull(exCOParser.getFieldForFomElement("root_frame_name"));
         assertNotNull(exCOParser.getFieldForFomElement("least_common_time_step"));
@@ -52,7 +52,7 @@ class ObjectClassModelParserTest {
     }
 
     @Test
-    void testMethodGeneration() {
+    void testBasicMethodGeneration() {
         assertEquals("getValue", exCOParser.generateMethodName("get", "value"));
         assertEquals("setValue", exCOParser.generateMethodName("set", "value"));
         assertEquals("getPositionVector", exCOParser.generateMethodName("get", "positionVector"));
@@ -63,6 +63,8 @@ class ObjectClassModelParserTest {
 
     @Test
     void testPhysicalEntityFields() {
+        assertEquals("HLAobjectRoot.PhysicalEntity", physicalEntityParser.getFomClassName());
+
         Field nameField = physicalEntityParser.getFieldForFomElement("name");
         Field statusField = physicalEntityParser.getFieldForFomElement("status");
         Field typeField = physicalEntityParser.getFieldForFomElement("type");
@@ -73,7 +75,6 @@ class ObjectClassModelParserTest {
 
         Set<String> publishableAttributes = physicalEntityParser.getPublishableAttributeNames();
         Set<String> subscribableAttributes = physicalEntityParser.getSubscribableAttributeNames();
-        assertEquals("HLAobjectRoot.PhysicalEntity", physicalEntityParser.getFomClassName());
         assertTrue(publishableAttributes.contains("name"));
         assertTrue(subscribableAttributes.contains("status"));
         assertTrue(publishableAttributes.contains("type"));

@@ -38,7 +38,6 @@ import org.see.skf.runtime.objects.ObjectClassModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.annotation.Annotation;
 import java.util.function.Predicate;
 
 /**
@@ -146,22 +145,71 @@ public abstract class SKBaseFederate implements SKFederateInterface {
         logger.debug("The RTI ambassador has been disconnected from its RTI.");
     }
 
-    /* This method effectively guarantees that an ObjectClass or InteractionClass annotation is present on the superclass
-     * of the supplied class at the bare minimum.
+    /* The following methods effectively guarantee that an ObjectClass or InteractionClass annotation is present on the
+     * supplied class or one of its ancestors at the bare minimum.
      */
-    private void verifyAnnotationExists(Class<?> targetClass, Class<? extends Annotation> annotationClass) {
-        String errorMessage = "Failed to parse the class " + targetClass.getName() + " because it is missing the " + annotationClass.getName() + " annotation.";
-        if (!targetClass.isAnnotationPresent(annotationClass)) {
-            Class<?> superClass = targetClass.getSuperclass();
-            if (!(superClass != null && superClass != Object.class && superClass.isAnnotationPresent(annotationClass))) {
+
+    private String isObjectClass(Class<?> targetClass) {
+        String errorMessage = "Failed to parse the class <" + targetClass.getName() + "> because it has no object class annotation.";
+        ObjectClass annotation = targetClass.getAnnotation(ObjectClass.class);
+        if (annotation == null) {
+            annotation = findKnownObjectClassAncestor(targetClass);
+
+            if (annotation == null) {
                 throw new IllegalStateException(errorMessage);
             }
         }
+
+        return annotation.name();
+    }
+
+    private String isInteractionClass(Class<?> targetClass) {
+        String errorMessage = "Failed to parse the class" + targetClass.getName() + "because it has no interaction class annotation.";
+        InteractionClass annotation = targetClass.getAnnotation(InteractionClass.class);
+        if (annotation == null) {
+            annotation = findInteractionClassAncestor(targetClass);
+
+            if (annotation == null) {
+                throw new IllegalStateException(errorMessage);
+            }
+        }
+
+        return annotation.name();
+    }
+
+    private ObjectClass findKnownObjectClassAncestor(Class<?> clazz) {
+        ObjectClass annotation = null;
+
+        while (clazz != null && clazz != Object.class) {
+            clazz = clazz.getSuperclass();
+            annotation = clazz.getAnnotation(ObjectClass.class);
+
+            if (annotation != null) {
+                break;
+            }
+        }
+
+        return annotation;
+    }
+
+    private InteractionClass findInteractionClassAncestor(Class<?> clazz) {
+        InteractionClass annotation = null;
+
+        while (clazz != null && clazz != Object.class) {
+            clazz = clazz.getSuperclass();
+            annotation = clazz.getAnnotation(InteractionClass.class);
+
+            if (annotation != null) {
+                break;
+            }
+        }
+
+        return annotation;
     }
 
     @Override
     public final void publishObjectClass(Class<?> objectClass) throws FederateNotExecutionMember, NameNotFound, NotConnected, RTIinternalError, InvalidObjectClassHandle, AttributeNotDefined, ObjectClassNotDefined, RestoreInProgress, SaveInProgress {
-        verifyAnnotationExists(objectClass, ObjectClass.class);
+        isObjectClass(objectClass);
 
         Predicate<ObjectClassModel> searchPredicate = model -> model.getObjectClass().equals(objectClass);
         ObjectClassModel objectClassModel = federateAmbassador.queryObjectClassModels(searchPredicate);
@@ -175,7 +223,7 @@ public abstract class SKBaseFederate implements SKFederateInterface {
 
     @Override
     public final void unpublishObjectClass(Class<?> objectClass) throws FederateNotExecutionMember, ObjectClassNotDefined, RestoreInProgress, OwnershipAcquisitionPending, NotConnected, RTIinternalError, SaveInProgress, AttributeNotDefined {
-        verifyAnnotationExists(objectClass, ObjectClass.class);
+        isObjectClass(objectClass);
 
         Predicate<ObjectClassModel> searchPredicate = model -> model.getObjectClass().equals(objectClass);
         ObjectClassModel objectClassModel = federateAmbassador.queryObjectClassModels(searchPredicate);
@@ -190,7 +238,7 @@ public abstract class SKBaseFederate implements SKFederateInterface {
 
     @Override
     public final void subscribeObjectClass(Class<?> objectClass) throws FederateNotExecutionMember, NameNotFound, NotConnected, RTIinternalError, InvalidObjectClassHandle, AttributeNotDefined, ObjectClassNotDefined, RestoreInProgress, SaveInProgress {
-        verifyAnnotationExists(objectClass, ObjectClass.class);
+        isObjectClass(objectClass);
 
         Predicate<ObjectClassModel> searchPredicate = model -> model.getObjectClass().equals(objectClass);
         ObjectClassModel objectClassModel = federateAmbassador.queryObjectClassModels(searchPredicate);
@@ -204,7 +252,7 @@ public abstract class SKBaseFederate implements SKFederateInterface {
 
     @Override
     public final void unsubscribeObjectClass(Class<?> objectClass) throws FederateNotExecutionMember, AttributeNotDefined, ObjectClassNotDefined, RestoreInProgress, NotConnected, RTIinternalError, SaveInProgress {
-        verifyAnnotationExists(objectClass, ObjectClass.class);
+        isObjectClass(objectClass);
 
         Predicate<ObjectClassModel> searchPredicate = model -> model.getObjectClass().equals(objectClass);
         ObjectClassModel objectClassModel = federateAmbassador.queryObjectClassModels(searchPredicate);
@@ -219,7 +267,7 @@ public abstract class SKBaseFederate implements SKFederateInterface {
 
     @Override
     public final void publishInteractionClass(Class<?> interactionClass) throws FederateNotExecutionMember, NameNotFound, NotConnected, RTIinternalError, InvalidInteractionClassHandle, RestoreInProgress, InteractionClassNotDefined, SaveInProgress {
-        verifyAnnotationExists(interactionClass, InteractionClass.class);
+        isInteractionClass(interactionClass);
 
         Predicate<InteractionClassModel> searchPredicate = model -> model.getInteractionClass().equals(interactionClass);
         InteractionClassModel interactionClassModel = federateAmbassador.queryInteractionClassModels(searchPredicate);
@@ -233,7 +281,7 @@ public abstract class SKBaseFederate implements SKFederateInterface {
 
     @Override
     public final void unpublishInteractionClass(Class<?> interactionClass) throws FederateNotExecutionMember, RestoreInProgress, InteractionClassNotDefined, NotConnected, RTIinternalError, SaveInProgress {
-        verifyAnnotationExists(interactionClass, InteractionClass.class);
+        isInteractionClass(interactionClass);
 
         Predicate<InteractionClassModel> searchPredicate = model -> model.getInteractionClass().equals(interactionClass);
         InteractionClassModel interactionClassModel = federateAmbassador.queryInteractionClassModels(searchPredicate);
@@ -247,7 +295,7 @@ public abstract class SKBaseFederate implements SKFederateInterface {
 
     @Override
     public final void subscribeInteractionClass(Class<?> interactionClass) throws FederateNotExecutionMember, NameNotFound, NotConnected, RTIinternalError, InvalidInteractionClassHandle, RestoreInProgress, InteractionClassNotDefined, SaveInProgress, FederateServiceInvocationsAreBeingReportedViaMOM {
-        verifyAnnotationExists(interactionClass, InteractionClass.class);
+        isInteractionClass(interactionClass);
 
         Predicate<InteractionClassModel> searchPredicate = model -> model.getInteractionClass().equals(interactionClass);
         InteractionClassModel interactionClassModel = federateAmbassador.queryInteractionClassModels(searchPredicate);
@@ -261,7 +309,7 @@ public abstract class SKBaseFederate implements SKFederateInterface {
 
     @Override
     public final void unsubscribeInteractionClass(Class<?> interactionClass) throws FederateNotExecutionMember, RestoreInProgress, InteractionClassNotDefined, NotConnected, RTIinternalError, SaveInProgress {
-        verifyAnnotationExists(interactionClass, InteractionClass.class);
+        isInteractionClass(interactionClass);
 
         Predicate<InteractionClassModel> searchPredicate = model -> model.getInteractionClass().equals(interactionClass);
         InteractionClassModel interactionClassModel = federateAmbassador.queryInteractionClassModels(searchPredicate);
@@ -298,8 +346,8 @@ public abstract class SKBaseFederate implements SKFederateInterface {
             return null;
         }
 
-        verifyAnnotationExists(objectInstanceElement.getClass(), ObjectClass.class);
-        return federateAmbassador.createEntity(objectInstanceElement);
+        String objectClassName = isObjectClass(objectInstanceElement.getClass());
+        return federateAmbassador.createEntity(objectClassName, objectInstanceElement);
     }
 
     @Override
@@ -314,8 +362,8 @@ public abstract class SKBaseFederate implements SKFederateInterface {
             return null;
         }
 
-        verifyAnnotationExists(objectInstanceElement.getClass(), ObjectClass.class);
-        return federateAmbassador.createEntity(objectInstanceElement, requestedName);
+        String objectClassName = isObjectClass(objectInstanceElement.getClass());
+        return federateAmbassador.createEntity(objectClassName, objectInstanceElement, requestedName);
     }
 
     @Override
@@ -324,7 +372,7 @@ public abstract class SKBaseFederate implements SKFederateInterface {
             throw new UpdateException("Failed to send updated object instance values to the RTI because the provided object instance is NULL.");
         }
 
-        verifyAnnotationExists(objectInstance.getClass(), ObjectClass.class);
+        isObjectClass(objectInstance.getClass());
         federateAmbassador.updateEntity(objectInstance);
     }
 
@@ -335,7 +383,7 @@ public abstract class SKBaseFederate implements SKFederateInterface {
             return;
         }
 
-        verifyAnnotationExists(objectInstance.getClass(), ObjectClass.class);
+        isObjectClass(objectInstance.getClass());
         federateAmbassador.deleteEntity(objectInstance, relinquishNameReservation);
     }
 
@@ -346,8 +394,8 @@ public abstract class SKBaseFederate implements SKFederateInterface {
             return false;
         }
 
-        verifyAnnotationExists(interaction.getClass(), InteractionClass.class);
-        return federateAmbassador.sendInteraction(interaction);
+        String interactionClassName = isInteractionClass(interaction.getClass());
+        return federateAmbassador.sendInteraction(interactionClassName, interaction);
     }
 
     @Override

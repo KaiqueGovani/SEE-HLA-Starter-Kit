@@ -51,19 +51,19 @@ public final class InteractionClassModelParser extends AbstractModelParser {
 
     @Override
     protected boolean retrieveModelType() {
-        boolean traversalNeeded = false;
         InteractionClass interactionClass = getFomClass().getAnnotation(InteractionClass.class);
 
+        Class<?> superClass = getFomClass().getSuperclass();
+        InteractionClass superInteractionClassAnnotation = superClass.getAnnotation(InteractionClass.class);
+
+        boolean traversalNeeded = superInteractionClassAnnotation != null;
         if (interactionClass == null) {
-            Class<?> superClass = getFomClass().getSuperclass();
             interactionClass = superClass.getAnnotation(InteractionClass.class);
             setFomClass(superClass);
-            traversalNeeded = true;
         }
 
         setFomClassName(interactionClass.name());
         this.parameterNames = new HashSet<>();
-
 
         logger.debug("Generated model class structure for the HLA interaction class <{}>.", interactionClass.name());
         return traversalNeeded;

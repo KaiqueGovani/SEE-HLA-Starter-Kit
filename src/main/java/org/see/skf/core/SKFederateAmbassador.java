@@ -29,8 +29,6 @@ package org.see.skf.core;
 import hla.rti1516_2025.*;
 import hla.rti1516_2025.exceptions.*;
 import hla.rti1516_2025.time.LogicalTime;
-import org.see.skf.annotations.InteractionClass;
-import org.see.skf.annotations.ObjectClass;
 import org.see.skf.exceptions.UpdateException;
 import org.see.skf.runtime.interactions.InteractionClassModel;
 import org.see.skf.runtime.interactions.InteractionClassModelParser;
@@ -90,19 +88,15 @@ public class SKFederateAmbassador extends NullFederateAmbassador {
     }
 
     final ObjectClassModel addObjectClassModel(Class<?> objectClass) throws FederateNotExecutionMember, NameNotFound, NotConnected, RTIinternalError, InvalidObjectClassHandle {
-        if (objectClass.isAnnotationPresent(ObjectClass.class)) {
-            ObjectClassModelParser parser = new ObjectClassModelParser(objectClass);
-            String className = parser.getFomClassName();
-            RTIambassador rtiAmbassador = HLAUtilityFactory.INSTANCE.getRtiAmbassador();
-            ObjectClassHandle classHandle = rtiAmbassador.getObjectClassHandle(className);
+        ObjectClassModelParser parser = new ObjectClassModelParser(objectClass);
+        String className = parser.getFomClassName();
+        RTIambassador rtiAmbassador = HLAUtilityFactory.INSTANCE.getRtiAmbassador();
+        ObjectClassHandle classHandle = rtiAmbassador.getObjectClassHandle(className);
 
-            ObjectClassModel model = new ObjectClassModel(parser, classHandle);
-            objectClassModels.add(model);
+        ObjectClassModel model = new ObjectClassModel(parser, classHandle);
+        objectClassModels.add(model);
 
-            return model;
-        } else {
-            throw new IllegalStateException("Failed to parse the class <" + objectClass.getName() + "> because it is not annotated with @ObjectClass.");
-        }
+        return model;
     }
 
     final InteractionClassModel queryInteractionClassModels(Predicate<InteractionClassModel> predicate) {
@@ -114,19 +108,15 @@ public class SKFederateAmbassador extends NullFederateAmbassador {
     }
 
     final InteractionClassModel addInteractionClassModel(Class<?> interactionClass) throws FederateNotExecutionMember, NameNotFound, NotConnected, RTIinternalError, InvalidInteractionClassHandle {
-        if (interactionClass.isAnnotationPresent(InteractionClass.class)) {
-            InteractionClassModelParser parser = new InteractionClassModelParser(interactionClass);
-            String className = parser.getFomClassName();
-            RTIambassador rtiAmbassador = HLAUtilityFactory.INSTANCE.getRtiAmbassador();
-            InteractionClassHandle classHandle = rtiAmbassador.getInteractionClassHandle(className);
+        InteractionClassModelParser parser = new InteractionClassModelParser(interactionClass);
+        String className = parser.getFomClassName();
+        RTIambassador rtiAmbassador = HLAUtilityFactory.INSTANCE.getRtiAmbassador();
+        InteractionClassHandle classHandle = rtiAmbassador.getInteractionClassHandle(className);
 
-            InteractionClassModel model = new InteractionClassModel(parser, classHandle);
-            interactionClassModels.add(model);
+        InteractionClassModel model = new InteractionClassModel(parser, classHandle);
+        interactionClassModels.add(model);
 
-            return model;
-        } else {
-            throw new IllegalStateException("Failed to parse the class <" + interactionClass.getName() + "> because it is not annotated with @InteractionClass.");
-        }
+        return model;
     }
 
     final ObjectClassEntity queryEntities(Predicate<ObjectClassEntity> predicate) {
@@ -244,8 +234,7 @@ public class SKFederateAmbassador extends NullFederateAmbassador {
         return remoteEntityToMaturity.get(entity);
     }
 
-    final String createEntity(Object objectInstanceElement) throws FederateNotExecutionMember, ObjectClassNotPublished, ObjectClassNotDefined, RestoreInProgress, NotConnected, RTIinternalError, SaveInProgress, ObjectInstanceNotKnown {
-        String fomClassName = objectInstanceElement.getClass().getAnnotation(ObjectClass.class).name();
+    final String createEntity(String fomClassName, Object objectInstanceElement) throws FederateNotExecutionMember, ObjectClassNotPublished, ObjectClassNotDefined, RestoreInProgress, NotConnected, RTIinternalError, SaveInProgress, ObjectInstanceNotKnown {
         Predicate<ObjectClassModel> searchPredicate = c -> c.getName().equals(fomClassName);
         ObjectClassModel model = queryObjectClassModels(searchPredicate);
 
@@ -273,8 +262,7 @@ public class SKFederateAmbassador extends NullFederateAmbassador {
         return nameRegistry.getOrDefault(name, NameReservationStatus.UNRESERVED);
     }
 
-    final String createEntity(Object objectInstanceElement, String name) throws FederateNotExecutionMember, RestoreInProgress, IllegalName, NotConnected, RTIinternalError, SaveInProgress, ObjectClassNotPublished, ObjectClassNotDefined, ObjectInstanceNameInUse, ObjectInstanceNameNotReserved, ObjectInstanceNotKnown {
-        String fomClassName = objectInstanceElement.getClass().getAnnotation(ObjectClass.class).name();
+    final String createEntity(String fomClassName, Object objectInstanceElement, String name) throws FederateNotExecutionMember, RestoreInProgress, IllegalName, NotConnected, RTIinternalError, SaveInProgress, ObjectClassNotPublished, ObjectClassNotDefined, ObjectInstanceNameInUse, ObjectInstanceNameNotReserved, ObjectInstanceNotKnown {
         Predicate<ObjectClassModel> searchPredicate = c -> c.getName().equals(fomClassName);
         ObjectClassModel model = queryObjectClassModels(searchPredicate);
 
@@ -301,7 +289,7 @@ public class SKFederateAmbassador extends NullFederateAmbassador {
                 return name;
             } else {
                 logger.warn("Failed to reserve \"{}\" for use as an object instance name. Relying on the RTI to allocate a name.", name);
-                createEntity(objectInstanceElement);
+                createEntity(fomClassName, objectInstanceElement);
             }
         } else {
             logger.warn("Failed to create object instance <{}> because it likely has not been published yet.", name);
@@ -384,10 +372,8 @@ public class SKFederateAmbassador extends NullFederateAmbassador {
         }
     }
 
-    public final boolean sendInteraction(Object interactionClassElement) throws FederateNotExecutionMember, InteractionParameterNotDefined, RestoreInProgress, InteractionClassNotDefined, InteractionClassNotPublished, NotConnected, RTIinternalError, SaveInProgress {
-        Class<?> interactionClass = interactionClassElement.getClass();
-        String className = interactionClass.getAnnotation(InteractionClass.class).name();
-        Predicate<InteractionClassModel> searchPredicate = c -> c.getName().equals(className);
+    public final boolean sendInteraction(String fomClassName, Object interactionClassElement) throws FederateNotExecutionMember, InteractionParameterNotDefined, RestoreInProgress, InteractionClassNotDefined, InteractionClassNotPublished, NotConnected, RTIinternalError, SaveInProgress {
+        Predicate<InteractionClassModel> searchPredicate = c -> c.getName().equals(fomClassName);
         InteractionClassModel model = queryInteractionClassModels(searchPredicate);
 
         if (model != null) {

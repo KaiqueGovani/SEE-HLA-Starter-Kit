@@ -131,7 +131,7 @@ public abstract class AbstractModelParser {
         // class fields and the SKF runtime mirrors the rules of the language.
         if (fieldInParent != null) {
             String parentFieldName = getFomElementNameForField(fieldInParent);
-            logger.warn("Redefining the field <{}> is redundant. It is already defined in a parent class.", parentFieldName);
+            logger.warn("Redefining the attribute <{}> is redundant. It is already defined for a field in a parent class.", parentFieldName);
         }
 
         this.fields.add(field);
@@ -142,7 +142,7 @@ public abstract class AbstractModelParser {
         this.fieldToCoder.put(field, coder);
     }
 
-    public final List<Class<?>> getClassHierarchy() {
+    private List<Class<?>> getClassHierarchy() {
         List<Class<?>> hierarchy = new ArrayList<>();
         Class<?> modelClass = getFomClass();
 
